@@ -57,10 +57,14 @@ Source5: psvn-init.el
 Source6: svnserve.service
 Source7: svnserve.tmpfiles
 Source8: svnserve.sysconf
+# For RHEL
+Source104: https://www.sqlite.org/2015/sqlite-amalgamation-3081101.zip
+
 Patch1: subversion-1.10.0-rpath.patch
 Patch2: subversion-1.10.0-pie.patch
 Patch4: subversion-1.8.0-rubybind.patch
 Patch5: subversion-1.8.5-swigplWall.patch
+Patch6: subversion-1.11.0-httpd.patch
 BuildRequires: autoconf, libtool, texinfo, which
 BuildRequires: swig >= 1.3.24, gettext
 %if %{with bdb}
@@ -211,11 +215,17 @@ Requires: subversion%{?_isa} = %{version}-%{release}
 This package includes supplementary tools for use with Subversion.
 
 %prep
-%setup -q
+%if 0%{?rhel} > 7 || 0%{?fedora} >= 19
+%setup -q -n %{name}-%{version} 
+%else
+%setup -q -n %{name}-%{version} -a 104
+ln -s sqlite-amalgamation-3081101 sqlite-amalgamation
+%endif
 %patch1 -p1 -b .rpath
 %patch2 -p1 -b .pie
 %patch4 -p1 -b .rubybind
 %patch5 -p1 -b .swigplWall
+%patch6 -p1 -b .httpd
 
 %build
 # Regenerate the buildsystem, so that:
