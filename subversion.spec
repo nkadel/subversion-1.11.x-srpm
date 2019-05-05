@@ -36,7 +36,7 @@
 
 Summary: A Modern Concurrent Version Control System
 Name: subversion
-Version: 1.11.0
+Version: 1.12.0
 Release: 1%{?dist}
 License: ASL 2.0
 Group: Development/Tools
@@ -50,8 +50,8 @@ Source5: psvn-init.el
 Source6: svnserve.service
 Source7: svnserve.tmpfiles
 Source8: svnserve.sysconf
-Patch1: subversion-1.10.0-rpath.patch
-Patch2: subversion-1.10.0-pie.patch
+Patch1: subversion-1.12.0-rpath.patch
+Patch2: subversion-1.12.0-pie.patch
 Patch4: subversion-1.8.0-rubybind.patch
 Patch5: subversion-1.8.5-swigplWall.patch
 BuildRequires: autoconf, libtool, texinfo, which
