@@ -1,8 +1,16 @@
-# set to zero to avoid running test suite
+# Single python3 version in Fedora, python3_pkgversion macro not available
+%{!?python3_pkgversion:%global python3_pkgversion 3}
 
-%bcond_without kwallet
-%bcond_without python2
+%if (0%{?fedora} > 0 || 0%{?rhel} > 7)
+%bcond_with python2
+%bcond_without python3
+%else
 %bcond_with python3
+%bcond_without python2
+%endif # fedora > 0 || rhel > 7
+
+# set to zero to avoid running test suite
+%bcond_without kwallet
 %bcond_without bdb
 %bcond_without tests
 %bcond_without pyswig
@@ -31,15 +39,14 @@
 %else
 %global svn_python_sitearch %{python3_sitearch}
 %global svn_python %{__python3}
-%global svn_python_br python3-devel
+%global svn_python_br python%{python3_pkgversion}-devel
 %endif
 
 Summary: A Modern Concurrent Version Control System
 Name: subversion
-Version: 1.12.0
-Release: 1%{?dist}
+Version: 1.11.1
+Release: 4%{?dist}
 License: ASL 2.0
-Group: Development/Tools
 URL: https://subversion.apache.org/
 
 Source0: https://www.apache.org/dist/subversion/subversion-%{version}.tar.bz2
@@ -50,8 +57,8 @@ Source5: psvn-init.el
 Source6: svnserve.service
 Source7: svnserve.tmpfiles
 Source8: svnserve.sysconf
-Patch1: subversion-1.12.0-rpath.patch
-Patch2: subversion-1.12.0-pie.patch
+Patch1: subversion-1.10.0-rpath.patch
+Patch2: subversion-1.10.0-pie.patch
 Patch4: subversion-1.8.0-rubybind.patch
 Patch5: subversion-1.8.5-swigplWall.patch
 BuildRequires: autoconf, libtool, texinfo, which
@@ -87,7 +94,6 @@ instead of every complete file.  Subversion is intended to be a
 compelling replacement for CVS.
 
 %package libs
-Group: Development/Tools
 Summary: Libraries for Subversion Version Control system
 # APR 1.3.x interfaces are required
 Conflicts: apr%{?_isa} < 1.3.0
@@ -106,7 +112,6 @@ Provides: %{name}-python = %{version}-%{release}
 Provides: %{name}-python%{?_isa} = %{version}-%{release}
 Obsoletes: %{name}-python < %{version}-%{release}
 BuildRequires: python2-devel
-Group: Development/Libraries
 Summary: Python bindings for Subversion Version Control system
 
 %description -n python2-subversion
@@ -114,19 +119,17 @@ The python2-subversion package includes the Python 2.x bindings to the
 Subversion libraries.
 %endif
 %if %{with python3} && %{with pyswig}
-%package -n python3-subversion
-%{?python_provide:%python_provide python3-subversion}
-Group: Development/Libraries
+%package -n python%{python3_pkgversion}-subversion
+%{?python_provide:%python_provide python%{python3_pkgversion}-subversion}
 Summary: Python bindings for Subversion Version Control system
-BuildRequires: python3-devel
+BuildRequires: python%{python3_pkgversion}-devel
 
-%description -n python3-subversion
-The python3-subversion package includes the Python 3.x bindings to the
+%description -n python%{python3_pkgversion}-subversion
+The python%{python3_pkgversion}-subversion package includes the Python 3.x bindings to the
 Subversion libraries.
 %endif
 
 %package devel
-Group: Development/Tools
 Summary: Development package for the Subversion libraries
 Requires: subversion%{?_isa} = %{version}-%{release}
 Requires: apr-devel%{?_isa}, apr-util-devel%{?_isa}
@@ -136,7 +139,6 @@ The subversion-devel package includes the libraries and include files
 for developers interacting with the subversion package.
 
 %package gnome
-Group: Development/Tools
 Summary: GNOME Keyring support for Subversion
 Requires: subversion%{?_isa} = %{version}-%{release}
 BuildRequires: dbus-devel, libsecret-devel
@@ -147,7 +149,6 @@ passwords in the GNOME Keyring.
 
 %if %{with kwallet}
 %package kde
-Group: Development/Tools
 Summary: KDE Wallet support for Subversion
 Requires: subversion%{?_isa} = %{version}-%{release}
 BuildRequires: kdelibs-devel >= 4.0.0
@@ -158,7 +159,6 @@ passwords in the KDE Wallet.
 %endif
 
 %package -n mod_dav_svn
-Group: System Environment/Daemons
 Summary: Apache httpd module for Subversion server
 Requires: httpd-mmn = %{_httpd_mmn}
 Requires: subversion-libs%{?_isa} = %{version}-%{release}
@@ -169,7 +169,6 @@ The mod_dav_svn package allows access to a Subversion repository
 using HTTP, via the Apache httpd server.
 
 %package perl
-Group: Development/Libraries
 Summary: Perl bindings to the Subversion libraries
 BuildRequires: perl-devel >= 2:5.8.0, perl-generators, perl(ExtUtils::MakeMaker)
 BuildRequires: perl(Test::More), perl(ExtUtils::Embed)
@@ -181,7 +180,6 @@ This package includes the Perl bindings to the Subversion libraries.
 
 %if %{with_java}
 %package javahl
-Group: Development/Libraries
 Summary: JNI bindings to the Subversion libraries
 Requires: subversion = %{version}-%{release}
 BuildRequires: java-devel-openjdk
@@ -196,7 +194,6 @@ This package includes the JNI bindings to the Subversion libraries.
 %endif
 
 %package ruby
-Group: Development/Libraries
 Summary: Ruby bindings to the Subversion libraries
 BuildRequires: ruby-devel >= 1.9.1, ruby >= 1.9.1
 BuildRequires: rubygem(test-unit)
@@ -207,7 +204,6 @@ Conflicts: ruby-libs%{?_isa} < 1.8.2
 This package includes the Ruby bindings to the Subversion libraries.
 
 %package tools
-Group: Development/Tools
 Summary: Supplementary tools for Subversion
 Requires: subversion%{?_isa} = %{version}-%{release}
 
@@ -439,22 +435,14 @@ make check-javahl
 %postun
 %systemd_postun_with_restart svnserve.service
 
-%post libs -p /sbin/ldconfig
+%ldconfig_scriptlets libs
 
-%postun libs -p /sbin/ldconfig
+%ldconfig_scriptlets perl
 
-%post perl -p /sbin/ldconfig
-
-%postun perl -p /sbin/ldconfig
-
-%post ruby -p /sbin/ldconfig
-
-%postun ruby -p /sbin/ldconfig
+%ldconfig_scriptlets ruby
 
 %if %{with_java}
-%post javahl -p /sbin/ldconfig
-
-%postun javahl -p /sbin/ldconfig
+%ldconfig_scriptlets javahl
 %endif
 
 %files -f %{name}.files
@@ -498,7 +486,7 @@ make check-javahl
 %endif
 
 %if %{with python3} && %{with pyswig}
-%files -n python3-subversion
+%files -n python%{python3_pkgversion}-subversion
 %{python3_sitearch}/svn
 %{python3_sitearch}/libsvn
 %endif
@@ -542,6 +530,18 @@ make check-javahl
 %endif
 
 %changelog
+* Sun Feb 03 2019 Fedora Release Engineering <releng@fedoraproject.org> - 1.11.1-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
+
+* Mon Jan 21 2019 Mamoru TASAKA <mtasaka@fedoraproject.org> - 1.11.1-3
+- F-30: rebuild against ruby26
+
+* Mon Jan 14 2019 Björn Esser <besser82@fedoraproject.org> - 1.11.1-2
+- Rebuilt for libcrypt.so.2 (#1666033)
+
+* Fri Jan 11 2019 Joe Orton <jorton@redhat.com> - 1.11.1-1
+- update to 1.11.1
+
 * Wed Oct 31 2018 Joe Orton <jorton@redhat.com> - 1.11.0-1
 - update to 1.11.0
 
