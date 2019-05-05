@@ -1,10 +1,7 @@
 *.log
 *.out
 *.rpm
+*.tar.*
 */
 *[0-9]
 *~
-airflowrepo-*
-epel-*
-rpmbuild
-sclpy27-*-x86_64
