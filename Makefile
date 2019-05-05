@@ -82,6 +82,7 @@ clean::
 	rm -rf */
 	rm -f *.rpm
 	rm -f *~
+	rm -f *.out
 
 realclean distclean:: clean
 
