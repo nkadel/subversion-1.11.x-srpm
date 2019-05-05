@@ -11,6 +11,7 @@ RSYNCOPTS=-a --no-owner --no-group
 RSYNCSAFEOPTS=$(RSYNCOPTS) --ignore-existing 
 
 # "mock" configurations to build with, activate only as needed
+MOCKS+=fedora-30-x86_64
 MOCKS+=fedora-29-x86_64
 MOCKS+=epel-7-x86_64
 # Some RHEL dependencies are supplied locally in py2packrepo
@@ -78,9 +79,10 @@ mock:: $(MOCKS)
 clean::
 	rm -rf $(MOCKS)
 	rm -rf rpmbuild
-	rm -rf *.rpm
+	rm -rf */
+	rm -f *.rpm
+	rm -f *~
 
 realclean distclean:: clean
-	rm -f *.src.rpm
 
 FORCE:
