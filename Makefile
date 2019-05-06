@@ -23,22 +23,11 @@ REPOBASEDIR="`/bin/pwd | xargs dirname`/py2packrepo"
 SPEC := `ls *.spec | head -1`
 PKGNAME := "`ls *.spec | head -1 | sed 's/.spec$$//g'`"
 
-all:: verifyspec
 # Needed for yum repo updates
 all:: /usr/bin/createrepo
 all:: $(MOCKS)
 
-# Oddness to get deduced .spec file verified
-verifyspec:: FORCE
-	@if [ ! -e $(SPEC) ]; then \
-	    echo Error: SPEC file $(SPEC) not found, exiting; \
-	    exit 1; \
-	fi
-
-# Needed for correct srpm and build format
-#build srpm:: /etc/rpm/macros.python27-config
-
-srpm:: verifyspec FORCE
+srpm:: FORCE
 	@echo "Building $(SPEC) SRPM"
 	rm -rf rpmbuild
 	rpmbuild --define '_topdir $(PWD)/rpmbuild' \
@@ -50,34 +39,22 @@ build:: srpm FORCE
 	rpmbuild --define '_topdir $(PWD)/rpmbuild' \
 		--rebuild rpmbuild/SRPMS/*.src.rpm
 
-$(MOCKS):: verifyspec FORCE
-	@if [ -n "`find $@ -name \*.rpm ! -name \*.src.rpm 2>/dev/null`" ]; then \
-		echo "	Skipping $(SPEC) in $@ with RPMS"; \
+$(MOCKS):: srpm FORCE
+	@if [ -e $@ -a -n "`find $@ -name \*.rpm`" ]; then \
+		echo "	Skipping RPM populated $@"; \
 	else \
-		echo "	Building $@ SRPM with $(SPEC)"; \
-		rm -rf $@; \
-		mock -r /etc/mock/$@.cfg \
-		    --resultdir=$(PWD)/$@ \
-		    --sources=$(PWD) --buildsrpm --spec=$(SPEC); \
-		echo "Storing $@/*.src.rpm in $@.src.rpm"; \
-		/bin/mv $@/*.src.rpm $@.src.rpm; \
+		echo "Storing " rpmbuild/SRPMS/*.src.rpm "as $@.src.rpm"; \
+		install rpmbuild/SRPMS/*.src.rpm $@.src.rpm; \
 		echo "Building $@.src.rpm in $@"; \
 		rm -rf $@; \
-		mock -r /etc/mock/$@.cfg \
-		    --resultdir=$(PWD)/$@ \
-		    $@.src.rpm; \
+		mock -q -r $@ \
+		     --resultdir=$(PWD)/$@ \
+		     $@.src.rpm; \
 	fi
 
 mock:: $(MOCKS)
 
-# Do not use this for EPEL based builds
-#	    echo "Touching $(PWD)/../$$repo.cfg to clear cache"; \
-#	    /bin/touch --no-dereference $(PWD)/../$$repo.cfg; \
-#
-
-
 clean::
-	rm -rf $(MOCKS)
 	rm -rf rpmbuild
 	rm -rf */
 	rm -f *.rpm
