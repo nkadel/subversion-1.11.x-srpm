@@ -1,16 +1,8 @@
-# Single python3 version in Fedora, python3_pkgversion macro not available
-%{!?python3_pkgversion:%global python3_pkgversion 3}
-
-%if (0%{?fedora} > 0 || 0%{?rhel} > 7)
-%bcond_with python2
-%bcond_without python3
-%else
-%bcond_with python3
-%bcond_without python2
-%endif # fedora > 0 || rhel > 7
-
 # set to zero to avoid running test suite
+
 %bcond_without kwallet
+%bcond_without python2
+%bcond_with python3
 %bcond_without bdb
 %bcond_without tests
 %bcond_without pyswig
@@ -39,13 +31,13 @@
 %else
 %global svn_python_sitearch %{python3_sitearch}
 %global svn_python %{__python3}
-%global svn_python_br python%{python3_pkgversion}-devel
+%global svn_python_br python3-devel
 %endif
 
 Summary: A Modern Concurrent Version Control System
 Name: subversion
-Version: 1.11.1
-Release: 4%{?dist}
+Version: 1.12.0
+Release: 1%{?dist}
 License: ASL 2.0
 URL: https://subversion.apache.org/
 
@@ -57,14 +49,10 @@ Source5: psvn-init.el
 Source6: svnserve.service
 Source7: svnserve.tmpfiles
 Source8: svnserve.sysconf
-# For RHEL
-Source104: https://www.sqlite.org/2015/sqlite-amalgamation-3081101.zip
-
-Patch1: subversion-1.10.0-rpath.patch
-Patch2: subversion-1.10.0-pie.patch
+Patch1: subversion-1.12.0-linking.patch
 Patch4: subversion-1.8.0-rubybind.patch
 Patch5: subversion-1.8.5-swigplWall.patch
-Patch6: subversion-1.11.0-httpd.patch
+Patch6: subversion-1.11.1-r1857391.patch
 BuildRequires: autoconf, libtool, texinfo, which
 BuildRequires: swig >= 1.3.24, gettext
 %if %{with bdb}
@@ -123,13 +111,13 @@ The python2-subversion package includes the Python 2.x bindings to the
 Subversion libraries.
 %endif
 %if %{with python3} && %{with pyswig}
-%package -n python%{python3_pkgversion}-subversion
-%{?python_provide:%python_provide python%{python3_pkgversion}-subversion}
+%package -n python3-subversion
+%{?python_provide:%python_provide python3-subversion}
 Summary: Python bindings for Subversion Version Control system
-BuildRequires: python%{python3_pkgversion}-devel
+BuildRequires: python3-devel
 
-%description -n python%{python3_pkgversion}-subversion
-The python%{python3_pkgversion}-subversion package includes the Python 3.x bindings to the
+%description -n python3-subversion
+The python3-subversion package includes the Python 3.x bindings to the
 Subversion libraries.
 %endif
 
@@ -215,17 +203,11 @@ Requires: subversion%{?_isa} = %{version}-%{release}
 This package includes supplementary tools for use with Subversion.
 
 %prep
-%if 0%{?rhel} > 7 || 0%{?fedora} >= 19
-%setup -q -n %{name}-%{version} 
-%else
-%setup -q -n %{name}-%{version} -a 104
-ln -s sqlite-amalgamation-3081101 sqlite-amalgamation
-%endif
-%patch1 -p1 -b .rpath
-%patch2 -p1 -b .pie
+%setup -q
+%patch1 -p1 -b .linking
 %patch4 -p1 -b .rubybind
 %patch5 -p1 -b .swigplWall
-%patch6 -p1 -b .httpd
+%patch6 -p1 -b .r1857391
 
 %build
 # Regenerate the buildsystem, so that:
@@ -496,7 +478,7 @@ make check-javahl
 %endif
 
 %if %{with python3} && %{with pyswig}
-%files -n python%{python3_pkgversion}-subversion
+%files -n python3-subversion
 %{python3_sitearch}/svn
 %{python3_sitearch}/libsvn
 %endif
@@ -540,6 +522,12 @@ make check-javahl
 %endif
 
 %changelog
+* Wed May  1 2019 Joe Orton <jorton@redhat.com> - 1.12.0-1
+- update to 1.12.0 (#1702471)
+
+* Wed Apr 17 2019 Joe Orton <jorton@redhat.com> - 1.11.1-5
+- fix build with APR 1.7.0 (upstream r1857391)
+
 * Sun Feb 03 2019 Fedora Release Engineering <releng@fedoraproject.org> - 1.11.1-4
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
 
